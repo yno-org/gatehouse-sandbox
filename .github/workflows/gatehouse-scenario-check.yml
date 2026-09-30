@@ -1,0 +1,32 @@
+# Installed in the test org's sandbox repo as .github/workflows/gatehouse-scenario-check.yml
+# (ticket 10.2). This copy is the source of truth for rebuilding the sandbox.
+#
+# The job `scenario-check` is the sandbox's required check. It fails when the commit under
+# test contains the scenario marker file `.gatehouse/ci-fail` and passes when it does not.
+# Epic 2's seeder adds or removes the marker through the Contents API.
+name: gatehouse-scenario-check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  scenario-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The pull request's head commit, not the merge ref, so the result belongs to that commit.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Fail when the scenario marker is present
+        run: |
+          if [ -e .gatehouse/ci-fail ]; then
+            echo "::error::Scenario marker .gatehouse/ci-fail is present"
+            exit 1
+          fi
+          echo "No scenario marker"
